@@ -120,6 +120,3 @@ Buka file HTML tersebut di browser. Baris merah menandakan realisasi yang tidak 
 - Data yang diambil oleh script ini berasal dari layanan publik yang disediakan oleh LKPP (melalui data.inaproc.id).
 - Script ini disediakan untuk keperluan edukasi, pembelajaran, dan uji analisis saja. Penggunaan script atau data untuk kegiatan yang melanggar hukum, manipulasi, atau tindakan yang merugikan pihak lain tidak dibenarkan.
 - Pengguna bertanggung jawab memastikan kepatuhan terhadap ketentuan penggunaan data dan peraturan yang berlaku sebelum memakai data hasil download untuk tujuan lain.
-
-- Jika download gagal berulang kali coba set `HEADLESS = False` untuk melihat langsung apa yang terjadi di browser.
-- Mode headless menggunakan chromium args anti-deteksi bawaan Playwright, tidak memerlukan library tambahan.

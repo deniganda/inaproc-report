@@ -206,11 +206,24 @@ def merge_rup_realisasi(
         merged = pd.concat([merged, extra], ignore_index=True)
 
     missing_codes = set(missing_in_rup["Kode RUP"])
-    merged["Status Data"] = merged["Kode RUP"].apply(
+    merged["Status"] = merged["Kode RUP"].apply(
         lambda k: "Realisasi tanpa RUP" if k in missing_codes else ""
     )
 
-    anomaly = (merged["Status Data"] == "Realisasi tanpa RUP").sum()
+    anomaly = (merged["Status"] == "Realisasi tanpa RUP").sum()
+    # Hitung persentase realisasi terhadap perencanaan untuk baris yang bukan anomaly
+    # Persentase dalam satuan 0..100 (float). Baris anomaly dibiarkan NA.
+    merged["Persentase"] = pd.NA
+    try:
+        mask = merged["Status"] != "Realisasi tanpa RUP"
+        if "Total Nilai (Rp)" in merged.columns:
+            denom = merged.loc[mask, "Total Nilai (Rp)"].replace({0: pd.NA})
+            merged.loc[mask, "Persentase"] = (
+                merged.loc[mask, "Total Realisasi (Rp)"] / denom
+            ) * 100
+    except Exception:
+        # Jika ada masalah perhitungan, biarkan kolom Persentase berisi NA
+        merged["Persentase"] = pd.NA
     logger.info(f"Kode RUP di realisasi tapi tidak ada di RUP: {anomaly}")
     return merged
 
@@ -225,19 +238,31 @@ def render_html(
     total_realisasi: int,
     cfg: argparse.Namespace,
 ) -> str:
-    anomaly_count = (merged["Status Data"] == "Realisasi tanpa RUP").sum()
+    anomaly_count = (merged["Status"] == "Realisasi tanpa RUP").sum()
 
-    data_records = [
-        [
+    data_records = []
+    for _, row in merged.iterrows():
+        # Untuk kolom Status: jika anomaly -> 'Realisasi tanpa RUP',
+        # selain itu tunjukkan persentase seperti '85.23%'.
+        status_val = _s(row.get("Status", ""))
+        if status_val != "Realisasi tanpa RUP":
+            perc_raw = row.get("Persentase", pd.NA)
+            if pd.isna(perc_raw):
+                status_val = ""
+            else:
+                try:
+                    status_val = f"{float(perc_raw):.2f}%"
+                except Exception:
+                    status_val = ""
+
+        data_records.append([
             _s(row.get("Kode RUP", "")),
             _s(row.get("Nama Paket", "")),
             float(row.get("Total Nilai (Rp)", 0) or 0),
             float(row.get("Total Realisasi (Rp)", 0) or 0),
             _s(row.get("Nama Penyedia", "")),
-            _s(row.get("Status Data", "")),
-        ]
-        for _, row in merged.iterrows()
-    ]
+            status_val,
+        ])
     data_json = safe_json(data_records)
 
     generated_at = datetime.now().strftime("%d %B %Y, %H:%M:%S")
@@ -304,9 +329,9 @@ def render_html(
           <th class="sortable" data-type="text">Kode RUP</th>
           <th class="sortable" data-type="text">Nama Paket</th>
           <th class="sortable" data-type="number" style="text-align:right">Total Perencanaan (Rp)</th>
-          <th class="sortable" data-type="number" style="text-align:right">Total Realisasi (Rp)</th>
-          <th class="sortable" data-type="text">Nama Penyedia</th>
-          <th class="sortable" data-type="text">Status Data</th>
+                    <th class="sortable" data-type="number" style="text-align:right">Total Realisasi (Rp)</th>
+                    <th class="sortable" data-type="text">Nama Penyedia</th>
+                    <th class="sortable" data-type="text">Status</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -335,16 +360,16 @@ function escapeHtml(s) {{
 
 function render(rows) {{
   const frag = document.createDocumentFragment();
-  for (const r of rows) {{
-    const tr = document.createElement('tr');
-    if (r[5] === 'Realisasi tanpa RUP') tr.className = 'anomaly';
-    tr.innerHTML =
-      '<td>' + escapeHtml(r[0]) + '</td>' +
-      '<td>' + escapeHtml(r[1]) + '</td>' +
-      '<td style="text-align:right">' + fmtRupiah(r[2]) + '</td>' +
-      '<td style="text-align:right">' + fmtRupiah(r[3]) + '</td>' +
-      '<td>' + escapeHtml(r[4]) + '</td>' +
-      '<td>' + escapeHtml(r[5]) + '</td>';
+    for (const r of rows) {{
+        const tr = document.createElement('tr');
+        if (r[5] === 'Realisasi tanpa RUP') tr.className = 'anomaly';
+        tr.innerHTML =
+            '<td>' + escapeHtml(r[0]) + '</td>' +
+            '<td>' + escapeHtml(r[1]) + '</td>' +
+            '<td style="text-align:right">' + fmtRupiah(r[2]) + '</td>' +
+            '<td style="text-align:right">' + fmtRupiah(r[3]) + '</td>' +
+            '<td>' + escapeHtml(r[4]) + '</td>' +
+            '<td>' + escapeHtml(r[5]) + '</td>';
     frag.appendChild(tr);
   }}
   tbody.innerHTML = '';
@@ -353,11 +378,11 @@ function render(rows) {{
 }}
 
 searchInput.addEventListener('input', () => {{
-  const q = searchInput.value.trim().toLowerCase();
-  DATA = q
-    ? DATA_ALL.filter(r => (r[0] + ' ' + r[1] + ' ' + r[4]).toLowerCase().includes(q))
-    : DATA_ALL.slice();
-  render(DATA);
+    const q = searchInput.value.trim().toLowerCase();
+    DATA = q
+        ? DATA_ALL.filter(r => (r[0] + ' ' + r[1] + ' ' + r[4]).toLowerCase().includes(q))
+        : DATA_ALL.slice();
+    render(DATA);
 }});
 
 headers.forEach((header, index) => {{

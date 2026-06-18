@@ -31,7 +31,7 @@ playwright install chromium
 
 ## Konfigurasi
 
-Buka `rup_realisasi.py` dan ubah bagian ini:
+Buka `main.py` dan ubah bagian ini:
 
 ```python
 TAHUN      = "2026"   # tahun anggaran
@@ -69,13 +69,13 @@ Kode instansi bisa dilihat dari URL saat membuka halaman RUP di [data.inaproc.id
 Ubah nilai di blok konfigurasi, lalu:
 
 ```bash
-python rup_realisasi.py
+python main.py
 ```
 
 ### Cara 2 — Argumen CLI
 
 ```bash
-python rup_realisasi.py --tahun 2025 --instansi D69 --jenis-klpd 3
+python main.py --tahun 2025 --instansi D69 --jenis-klpd 3
 ```
 
 ### Semua opsi CLI
@@ -96,9 +96,30 @@ File HTML disimpan di direktori yang sama dengan script:
 rup_vs_realisasi_D270_2026_20260617_104530.html
 ```
 
-Buka file tersebut di browser. Baris merah menandakan realisasi yang tidak memiliki pasangan RUP.
+Contoh screenshot hasil laporan:
 
-## Catatan
+<p align="center">
+  <img src="scr/Screenshot.png" alt="Contoh laporan" width="650" />
+</p>
+
+Buka file HTML tersebut di browser. Baris merah menandakan realisasi yang tidak memiliki pasangan RUP.
+
+## Kolom Laporan
+
+- **Kode RUP**: Kode unik paket pengadaan pada sistem RUP.
+- **Nama Paket**: Nama paket pekerjaan/peberian layanan sebagaimana tercantum di RUP.
+- **Total Perencanaan (Rp)**: Nilai anggaran yang direncanakan pada RUP (dalam Rupiah).
+- **Total Realisasi (Rp)**: Jumlah realisasi pembayaran atau kontrak yang tercatat (dalam Rupiah).
+- **Nama Penyedia**: Nama penyedia yang tercatat pada data realisasi (jika ada).
+- **Status**: Menampilkan salah satu dari:
+	- `Realisasi tanpa RUP` — artinya ada data realisasi yang tidak ditemukan pasangan RUP.
+	- persentase realisasi terhadap perencanaan seperti `85.23%` untuk baris yang memiliki RUP.
+
+## Catatan Data & Penggunaan
+
+- Data yang diambil oleh script ini berasal dari layanan publik yang disediakan oleh LKPP (melalui data.inaproc.id).
+- Script ini disediakan untuk keperluan edukasi, pembelajaran, dan uji analisis saja. Penggunaan script atau data untuk kegiatan yang melanggar hukum, manipulasi, atau tindakan yang merugikan pihak lain tidak dibenarkan.
+- Pengguna bertanggung jawab memastikan kepatuhan terhadap ketentuan penggunaan data dan peraturan yang berlaku sebelum memakai data hasil download untuk tujuan lain.
 
 - Jika download gagal berulang kali coba set `HEADLESS = False` untuk melihat langsung apa yang terjadi di browser.
 - Mode headless menggunakan chromium args anti-deteksi bawaan Playwright, tidak memerlukan library tambahan.
